@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>
 
 extern void* switchRSP(void*);
 extern void* getrsp(void*);
+extern void* smemcpy(uint64_t size,void* dest,void* src);
 
 #define getrsp(void) getrsp(&osRBP)
 //#define switchRSP(void) switchRSP(os)
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 	ts = ts - frameSz;
 	
 	printf("Copy Current Frame (Size:%d Bytes) RSP:0x%p -> New Stack:0x%p\n",frameSz, os,ts);
-	memcpy(ts,os,frameSz);
+	smemcpy(frameSz,ts,os);
 	
 	os = switchRSP(ts);
 	printf("New RSP via 'sPointer = switchRSP(0x%p);' RSP: 0x%p\n",ts,getrsp());
@@ -51,6 +51,7 @@ asm(".section .mine,\"x\"\n\t"
 	"\tmov rax,rsp\n"
 	"\tmov [rcx],rbp\n"
 	"\tret\n"
+	
 	"switchRSP:\n"	
         "\tpop rdx\n"
         "\tpush rdx\n"
@@ -63,7 +64,17 @@ asm(".section .mine,\"x\"\n\t"
         "\tpush rdx\n"
         "\tsub rbp,rax\n"
         "\tadd rbp,rsp\n"
-        "\tret\n");   
+        "\tret\n"
+	
+	"smemcpy:\n"
+		"\tpush rsi\n"
+		"\tpush rdi\n"
+		"\tmov rdi,rdx\n"
+		"\tmov rsi,r8\n"
+		"\trep movsb\n"
+		"\tpop rdi\n"
+		"\tpop rsi\n"
+		"\tret\n");   
         
         
         
